@@ -380,7 +380,7 @@ if uploaded_zip and run_clicked:
                             input_file = os.path.join(root, file)
                             try:
                                 result_df = grouped_behavior_with_totals(
-                                    input_file=input_file,
+                                    input_path=input_file,
                                     lipa_max=lipa_max,
                                     mpa_max=mpa_max
                                 )
@@ -419,5 +419,6 @@ if uploaded_zip and run_clicked:
 
 st.markdown("---")
 st.caption("Built with Streamlit | Sports Activity Classification Tool")
+
 
 
