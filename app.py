@@ -118,53 +118,40 @@ def grouped_behavior_with_totals(input_path, lipa_max, mpa_max):
 # 🌐 STREAMLIT FRONTEND (POLISHED VERSION)
 # ========================================================
 
+# ========================================================
+# 🌐 STREAMLIT UI (ONLY)
+# ========================================================
+
 st.set_page_config(
     page_title="Sports Activity Processor",
     page_icon="📊",
     layout="wide"
 )
 
-# ------------------------------
-# Custom Styling
-# ------------------------------
+st.title("📦 Sports Study ZIP Processor")
 st.markdown("""
-<style>
-.big-title {
-    font-size: 36px;
-    font-weight: 700;
-    color: #1f77b4;
-}
-.section-title {
-    font-size: 22px;
-    font-weight: 600;
-    margin-top: 20px;
-}
-.footer {
-    font-size: 14px;
-    color: gray;
-    text-align: center;
-    margin-top: 50px;
-}
-</style>
-""", unsafe_allow_html=True)
-
-# ------------------------------
-# Header
-# ------------------------------
-st.markdown('<div class="big-title">📦 Sports Study ZIP Processor</div>', unsafe_allow_html=True)
-
-st.markdown("""
-Process full study folders (T folders → ControlGroup / ExperimentalGroup → CSV files).
-Upload once, classify automatically, download results instantly.
+Upload your full study folder (T folders → ControlGroup / ExperimentalGroup → CSV files).
+Set classification thresholds and download processed results instantly.
 """)
 
 st.info("🔒 Files are processed temporarily and are NOT stored on the server.")
+st.markdown("---")
+
+# Folder Structure Guide
+with st.expander("📂 Click to view required folder structure"):
+    st.markdown("""
+    
+⚠️ Important:
+- Folder names must start with **T** (e.g., T1, T2)
+- Each T folder must contain:
+  - `ControlGroup`
+  - `ExperimentalGroup`
+- Only CSV files should be inside those subfolders
+""")
 
 st.markdown("---")
 
-# ------------------------------
-# Sidebar Settings
-# ------------------------------
+# Sidebar Threshold Settings
 st.sidebar.header("⚙ Activity Threshold Settings")
 
 lipa_max = st.sidebar.number_input(
@@ -186,75 +173,70 @@ st.sidebar.success(f"LPA: < {lipa_max}")
 st.sidebar.info(f"MIVA: {lipa_max} – {mpa_max}")
 st.sidebar.error(f"HPA: > {mpa_max}")
 
-# ------------------------------
-# Main Upload Section
-# ------------------------------
-st.markdown('<div class="section-title">📁 Upload Study ZIP File</div>', unsafe_allow_html=True)
-
-uploaded_zip = st.file_uploader(
-    "Drag and drop your compressed study folder here",
-    type=["zip"]
-)
+# ZIP Upload
+st.subheader("📁 Upload Study ZIP File")
+uploaded_zip = st.file_uploader("Drag and drop your ZIP file here", type=["zip"])
 
 if uploaded_zip:
-
-    st.success("ZIP file uploaded successfully!")
+    st.success("ZIP uploaded successfully!")
 
     if st.button("🚀 Process Entire Study", use_container_width=True):
-
         with st.spinner("Processing files... Please wait ⏳"):
-
             with tempfile.TemporaryDirectory() as temp_dir:
 
+                # Save uploaded ZIP temporarily
                 zip_path = os.path.join(temp_dir, "study.zip")
-
                 with open(zip_path, "wb") as f:
                     f.write(uploaded_zip.read())
 
-                with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+                # Extract ZIP
+                with zipfile.ZipFile(zip_path, "r") as zip_ref:
                     zip_ref.extractall(temp_dir)
 
+                # Build output ZIP in memory
                 output_buffer = io.BytesIO()
-                output_zip = zipfile.ZipFile(output_buffer, "w")
+                with zipfile.ZipFile(output_buffer, "w", compression=zipfile.ZIP_DEFLATED) as out_zip:
 
-                processed_files = 0
+                    processed_files = 0
+                    errors = []
 
-                for root, dirs, files in os.walk(temp_dir):
-                    for file in files:
-                        if file.endswith(".csv"):
+                    # Walk extracted folders, process every CSV
+                    for root, _, files in os.walk(temp_dir):
+                        for file in files:
+                            if file.lower().endswith(".csv"):
+                                input_file = os.path.join(root, file)
 
-                            input_file = os.path.join(root, file)
+                                try:
+                                    result_df = grouped_behavior_with_totals(
+                                        input_file=input_file,
+                                        lipa_max=lipa_max,
+                                        mpa_max=mpa_max
+                                    )
 
-                            try:
-                                result_df = grouped_behavior_with_totals(
-                                    input_file,
-                                    lipa_max,
-                                    mpa_max
-                                )
+                                    # Save Excel to bytes
+                                    excel_buffer = io.BytesIO()
+                                    result_df.to_excel(excel_buffer, index=False)
+                                    excel_buffer.seek(0)
 
-                                excel_name = file.replace(".csv", "_processed.xlsx")
+                                    # Keep folder structure in output ZIP
+                                    rel_dir = os.path.relpath(root, temp_dir)
+                                    excel_name = os.path.splitext(file)[0] + "_processed.xlsx"
+                                    zip_member_path = os.path.join(rel_dir, excel_name).replace("\\", "/")
 
-                                excel_buffer = io.BytesIO()
-                                result_df.to_excel(excel_buffer, index=False)
-                                excel_buffer.seek(0)
+                                    out_zip.writestr(zip_member_path, excel_buffer.read())
+                                    processed_files += 1
 
-                                output_zip.writestr(
-                                    os.path.relpath(
-                                        os.path.join(root, excel_name),
-                                        temp_dir
-                                    ),
-                                    excel_buffer.read()
-                                )
+                                except Exception as e:
+                                    errors.append((file, str(e)))
 
-                                processed_files += 1
+                st.success(f"🎉 Processing complete! {processed_files} CSV files processed.")
 
-                            except Exception as e:
-                                st.error(f"Error processing {file}: {e}")
+                if errors:
+                    st.warning(f"⚠️ {len(errors)} file(s) failed. Showing first 10:")
+                    for fn, msg in errors[:10]:
+                        st.write(f"- {fn}: {msg}")
 
-                output_zip.close()
-
-                st.success(f"🎉 Processing complete! {processed_files} files processed.")
-
+                output_buffer.seek(0)
                 st.download_button(
                     label="⬇ Download Processed ZIP",
                     data=output_buffer.getvalue(),
@@ -263,11 +245,6 @@ if uploaded_zip:
                     use_container_width=True
                 )
 
-# ------------------------------
-# Footer
-# ------------------------------
 st.markdown("---")
-st.markdown(
-    '<div class="footer">Built with Streamlit | Sports Activity Classification Tool</div>',
-    unsafe_allow_html=True
-)
+st.caption("Built with Streamlit | Sports Activity Classification Tool")
+
