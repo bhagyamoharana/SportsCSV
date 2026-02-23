@@ -129,7 +129,60 @@ def grouped_behavior_with_totals(input_path, lipa_max, mpa_max):
 # ========================================================
 
 st.set_page_config(page_title="Sports Activity Processor", page_icon="📊", layout="wide")
+st.markdown("""
+<style>
 
+/* === PRIMARY BUTTON (Process) === */
+div.stButton > button {
+    background: linear-gradient(90deg, #1f77b4, #4fa3ff);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    padding: 0.7em 1.2em;
+    font-weight: 700;
+    font-size: 16px;
+    box-shadow: 0 6px 15px rgba(31,119,180,0.35);
+    transition: all 0.2s ease-in-out;
+}
+
+/* Hover effect */
+div.stButton > button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(31,119,180,0.45);
+    background: linear-gradient(90deg, #1664a3, #3b91e6);
+}
+
+/* Click effect */
+div.stButton > button:active {
+    transform: scale(0.98);
+}
+
+
+/* === DOWNLOAD BUTTON === */
+div.stDownloadButton > button {
+    background: linear-gradient(90deg, #22c55e, #16a34a);
+    color: white;
+    border-radius: 12px;
+    padding: 0.7em 1.2em;
+    font-weight: 700;
+    font-size: 16px;
+    border: none;
+    box-shadow: 0 6px 15px rgba(22,163,74,0.35);
+    transition: all 0.2s ease-in-out;
+}
+
+div.stDownloadButton > button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(22,163,74,0.45);
+    background: linear-gradient(90deg, #16a34a, #15803d);
+}
+
+div.stDownloadButton > button:active {
+    transform: scale(0.98);
+}
+
+</style>
+""", unsafe_allow_html=True)
 # ------------------------------
 # Custom CSS
 # ------------------------------
@@ -354,3 +407,4 @@ if uploaded_zip and run_clicked:
 
 st.markdown("---")
 st.caption("Built with Streamlit | Sports Activity Classification Tool")
+
