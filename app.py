@@ -128,13 +128,13 @@ st.set_page_config(
     layout="wide"
 )
 
-st.title("📦 Sports Study ZIP Processor")
+st.title(" Sports Study ZIP Processor")
 st.markdown("""
 Upload your full study folder (T folders → ControlGroup / ExperimentalGroup → CSV files).
 Set classification thresholds and download processed results instantly.
 """)
 
-st.info("🔒 Files are processed temporarily and are NOT stored on the server.")
+st.info(" Files are processed temporarily and are NOT stored on the server.")
 st.markdown("---")
 
 # Folder Structure Guide
@@ -247,4 +247,5 @@ if uploaded_zip:
 
 st.markdown("---")
 st.caption("Built with Streamlit | Sports Activity Classification Tool")
+
 
